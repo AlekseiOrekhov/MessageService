@@ -3,9 +3,11 @@ package org.test.microservice.rabbit;
 import org.junit.jupiter.api.Test;
 import org.springframework.amqp.rabbit.annotation.EnableRabbit;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.test.microservice.config.CachingConfig;
 import org.test.microservice.config.LibraryForTestConfig;
@@ -26,6 +28,8 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 @EnableRabbit
 @SpringBootTest
 @MockBean(CountMessageScheduler.class)
+@DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.ANY)
 class RabbitMQConsumerTest {
 
     @Autowired
@@ -94,7 +98,7 @@ class RabbitMQConsumerTest {
         rabbitMQConsumer.consume(json);
 
         List<MessageEntity> messageEntities = messageRepository.findAll();
-        assertThat(messageEntities.size()).isEqualTo(4);
+        assertThat(messageEntities.size()).isEqualTo(2);
         for (MessageEntity message : messageEntities) {
             if (message.getType().equals(MessageType.SMS)) {
                 assertThat(message).extracting(MessageEntity::getFrom).isEqualTo("Nina");
@@ -134,6 +138,25 @@ class RabbitMQConsumerTest {
         rabbitMQConsumer.consume(json);
 
         List<MessageEntity> messageEntities = messageRepository.findAll();
-        assertThat(messageEntities.size()).isEqualTo(4);
+        assertThat(messageEntities.size()).isEqualTo(0);
+    }
+
+    @Test
+    void JSONIsValidAndHaveFilledId() throws Exception {
+        String json = "[\n" +
+                "    {\n" +
+                "        \"id\":\"35\",\n" +
+                "        \"from\":\"ami\",\n" +
+                "        \"to\":\"john\",\n" +
+                "        \"text\":\"privet\",\n" +
+                "        \"type\":\"EMAIL\"\n" +
+
+                "    }\n" +
+                "]\n";
+
+        rabbitMQConsumer.consume(json);
+
+        List<MessageEntity> messageEntities = messageRepository.findAll();
+        assertThat(messageEntities.size()).isEqualTo(1);
     }
 }

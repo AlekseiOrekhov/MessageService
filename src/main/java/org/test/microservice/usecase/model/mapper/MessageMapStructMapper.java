@@ -14,5 +14,7 @@ public interface MessageMapStructMapper {
 
     List<Message> map(List<MessageEntity> messageEntity);
 
+    // Реализовано чтобы при добавлении id мы все равно сохранили сообщение, но без этого id
+    @Mapping(target = "id", ignore = true)
     MessageEntity map(Message message);
 }
